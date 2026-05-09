@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Player - Unreal</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <canvas id="particle-canvas"></canvas>
+    <nav class="tabs">
+        <a href="index.html">Home</a>
+        <a href="games.html">Games</a>
+        <a href="apps.html">Apps</a>
+        <a href="extras.html">Extras</a>
+    </nav>
+    <div class="container">
+        <div class="game-player" id="game-player-panel">
+            <div class="game-player-controls">
+                <button id="reload-game">Reload</button>
+                <button id="enter-fullscreen">Fullscreen</button>
+                <button id="exit-fullscreen" style="display:none;">Exit Fullscreen</button>
+                <a href="games.html" class="search-button">Back to Games</a>
+            </div>
+            <h2 id="game-title" style="color:#fff; margin-bottom: 6px;">Loading Game...</h2>
+            <p id="game-desc" style="color:#aaa; max-width:800px; margin:0 auto 10px;">Use the controls above.</p>
+            <div id="embed-area" style="text-align:center;"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
+    <script src="script.js"></script>
+    <script>
+        const query = new URLSearchParams(window.location.search);
+        const gameId = query.get('game');
+        const titleEl = document.getElementById('game-title');
+        const descEl = document.getElementById('game-desc');
+        const embedArea = document.getElementById('embed-area');
+        const reloadBtn = document.getElementById('reload-game');
+
+        const swfFiles = [
+            "papashotdoggeria.swf"
+        ];
+
+        const gameList = Object.fromEntries(swfFiles.map(file => {
+            const label = file.replace(/\.swf$/i, '').replace(/_/g, ' ').replace(/-/g, ' ').trim();
+            const id = label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+            return [id, file];
+        }));
+
+        function loadGame() {
+            const swfFile = gameList[gameId];
+            if (swfFile) {
+                const displayName = gameId.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                titleEl.textContent = displayName;
+                descEl.textContent = 'Embedded SWF game (Ruffle emulator).';
+                embedArea.innerHTML = '';
+                const ruffle = window.RufflePlayer.newest();
+                const player = ruffle.createPlayer();
+                player.style.width = '100%';
+                player.style.height = '600px';
+                embedArea.appendChild(player);
+
+                const swfUrl = encodeURI(swfFile);
+
+                try {
+                    player.load(swfUrl);
+                    player.addEventListener('error', (event) => {
+                        const errorText = (event && event.message) ? event.message : 'Unknown Ruffle error';
+                        descEl.textContent = 'Ruffle loading failed: ' + errorText;
+                        embedArea.innerHTML = '<p style="color:#ffcccb;">Ruffle error: ' + errorText + '</p>';
+                    });
+                } catch (err) {
+                    const msg = err && err.message ? err.message : String(err);
+                    descEl.textContent = 'Ruffle load exception: ' + msg;
+                    embedArea.innerHTML = '<p style="color:#ffcccc;">Failed to load ' + swfUrl + ': ' + msg + '</p>';
+                    console.error('Ruffle load exception', err);
+                }
+            } else {
+                titleEl.textContent = 'Game not found';
+                descEl.textContent = 'No game is selected or the game is not available yet.';
+                embedArea.innerHTML = '<p style="color:#ddd;">Select a game from <a href="games.html">Games</a>.</p>';
+            }
+        }
+
+        loadGame();
+
+        reloadBtn.addEventListener('click', loadGame);
+
+        const enterFsBtn = document.getElementById('enter-fullscreen');
+        const exitFsBtn = document.getElementById('exit-fullscreen');
+        const playerPanel = document.getElementById('game-player-panel');
+
+        enterFsBtn.addEventListener('click', () => {
+            if (playerPanel.requestFullscreen) {
+                playerPanel.requestFullscreen();
+            } else if (playerPanel.webkitRequestFullscreen) {
+                playerPanel.webkitRequestFullscreen();
+            } else if (playerPanel.mozRequestFullScreen) {
+                playerPanel.mozRequestFullScreen();
+            }
+            enterFsBtn.style.display = 'none';
+            exitFsBtn.style.display = 'inline-block';
+        });
+
+        exitFsBtn.addEventListener('click', () => {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+            exitFsBtn.style.display = 'none';
+            enterFsBtn.style.display = 'inline-block';
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                exitFsBtn.style.display = 'none';
+                enterFsBtn.style.display = 'inline-block';
+            }
+        });
+
+        // Scroll to top behavior for game player page
+        const scrollTopBtn = document.createElement('button');
+        scrollTopBtn.id = 'scroll-top-btn';
+        scrollTopBtn.title = 'Scroll to top';
+        scrollTopBtn.textContent = '↑';
+        document.body.appendChild(scrollTopBtn);
+
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 300) {
+                scrollTopBtn.style.display = 'block';
+            } else {
+                scrollTopBtn.style.display = 'none';
+            }
+        });
+
+        scrollTopBtn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    </script>
+</body>
+</html>

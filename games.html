@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Games - Unreal</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <canvas id="particle-canvas"></canvas>
+    <nav class="tabs">
+        <a href="index.html">Home</a>
+        <a href="games.html">Games</a>
+        <a href="apps.html">Apps</a>
+        <a href="extras.html">Extras</a>
+    </nav>
+    <div class="container">
+        <h1 class="logo">Games</h1>
+        <form class="search-form" id="game-search">
+            <input type="text" id="game-query" placeholder="Search for games..." class="search-input">
+            <button type="submit" class="search-button">Search</button>
+        </form>
+        <div class="grid" id="games-grid"></div>
+
+        <div class="game-embed" id="game-embed-section" style="display:none; margin-top: 40px;">
+            <div class="game-player">
+                <div class="game-player-controls">
+                    <button id="reload-game">Reload</button>
+                    <a id="open-game-tab" class="search-button" style="display:none;" href="#">Open in game tab</a>
+                </div>
+                <h2 id="embed-title" style="color:#fff; margin-bottom: 6px;">Selected Game</h2>
+                <p id="embed-desc" style="color:#aaa; max-width:800px; margin:0 auto 10px;"></p>
+                <div id="embed-area" style="text-align:center;"></div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+    <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
+    <button id="scroll-top-btn" title="Scroll to top">↑</button>
+    <script>
+        const swfFiles = [
+            "papashotdoggeria.swf"
+        ];
+
+        const games = swfFiles.map(file => {
+            const label = file.replace(/\.swf$/i, '').replace(/_/g, ' ').replace(/-/g, ' ').trim();
+            const id = label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+            return { id, label, file };
+        });
+
+        const gamesGrid = document.getElementById('games-grid');
+        const gameSearchForm = document.getElementById('game-search');
+        const gameQueryInput = document.getElementById('game-query');
+
+        function renderGameGrid(filter = '') {
+            const filtered = games
+                .filter(g => g.label.toLowerCase().includes(filter.toLowerCase()))
+                .sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
+
+            gamesGrid.innerHTML = filtered.map(g => `
+                <div class="game-box" data-game="${g.id}" data-file="${g.file}">${g.label}</div>
+            `).join('');
+
+            const gameBoxes = document.querySelectorAll('.game-box');
+            gameBoxes.forEach(box => {
+                box.addEventListener('click', () => {
+                    const gameId = box.getAttribute('data-game');
+                    const game = games.find(x => x.id === gameId);
+                    if (!game) return;
+
+                    openGame(gameId, game.label, game.file);
+                });
+            });
+        }
+
+        renderGameGrid();
+
+        gameSearchForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            renderGameGrid(gameQueryInput.value);
+        });
+
+        function openGame(gameId, label, swfFile) {
+            window.location.href = `gameplayer.html?game=${encodeURIComponent(gameId)}`;
+        }
+
+        // Scroll to top button behavior
+        const scrollTopBtn = document.getElementById('scroll-top-btn');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 300) {
+                scrollTopBtn.style.display = 'block';
+            } else {
+                scrollTopBtn.style.display = 'none';
+            }
+        });
+
+        scrollTopBtn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    </script>
+</body>
+</html>
